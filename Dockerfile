@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
-WORKDIR /source
+WORKDIR /app
 
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
  && apt-get install -y --no-install-recommends nodejs \
@@ -7,18 +7,14 @@ RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
  && echo "npm version: $(npm --version)" \
  && rm -rf /var/lib/apt/lists/*
 
-COPY VueSpaTemplate/package.json .
-COPY VueSpaTemplate/npm-shrinkwrap.json .
-
-RUN npm --prefix VueSpaTemplate install
-
 COPY . .
 RUN dotnet restore
 
-WORKDIR /source/VueSpaTemplate
-RUN dotnet publish -c release -o /app --no-restore
+WORKDIR /app/VueSpa
+RUN npm cache clean --force
+RUN dotnet publish -c release -o /out --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS runtime
 WORKDIR /app
-COPY --from=build /app ./
-ENTRYPOINT ["dotnet", "VueSpaTemplate.dll"]
+COPY --from=build /out ./
+ENTRYPOINT ["dotnet", "VueSpa.dll"]
